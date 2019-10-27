@@ -31,15 +31,15 @@ namespace MTEncTest
 
             services.AddScoped<App>();
 
-            services.AddSingleton<IMessageDataRepository>(provider =>
-            {
-                return new MongoDbMessageDataRepository("mongodb://localhost", "testdb");
-            });
-
             //services.AddSingleton<IMessageDataRepository>(provider =>
             //{
-            //    return new InMemoryMessageDataRepository();
+            //    return new MongoDbMessageDataRepository("mongodb://localhost", "testdb");
             //});
+
+            services.AddSingleton<IMessageDataRepository>(provider =>
+            {
+                return new InMemoryMessageDataRepository();
+            });
 
             services.AddMassTransit(cfg =>
             {
@@ -72,7 +72,7 @@ namespace MTEncTest
                 });
 
                 cfg.ReceiveEndpoint(host, "test-req-res-queue", e => {
-                    //e.UseEncryption(key);
+                    e.UseEncryption(key);
 
                     e.ConfigureConsumer<TestRequestConsumer>(provider);
                     TestRequestConsumerUri = e.InputAddress;
