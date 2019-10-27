@@ -3,9 +3,8 @@ using System.Threading.Tasks;
 using MassTransit;
 using MassTransit.MessageData;
 using MassTransit.MongoDbIntegration.MessageData;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace MTEncTest
 {
@@ -15,14 +14,23 @@ namespace MTEncTest
 
         static async Task Main(string[] args)
         {
-            await new HostBuilder()
-                    .ConfigureServices(ConfigureServices)
-                    .RunConsoleAsync()
-                    .ConfigureAwait(false);
+            var serviceProvider = ConfigureServices();
+
+            serviceProvider
+                .GetService<ILoggerFactory>()
+                .AddConsole(LogLevel.Debug);
+
+            await serviceProvider.GetService<App>().Run();
         }
 
-        static void ConfigureServices(HostBuilderContext context, IServiceCollection services)
+        static ServiceProvider ConfigureServices()
         {
+            var services = new ServiceCollection();
+
+            services.AddLogging();
+
+            services.AddScoped<App>();
+
             services.AddSingleton<IMessageDataRepository>(provider =>
             {
                 return new MongoDbMessageDataRepository("mongodb://localhost", "testdb");
@@ -41,7 +49,7 @@ namespace MTEncTest
                 cfg.AddRequestClient<TestRequest>();
             });
 
-            services.AddSingleton<IHostedService, MassTransitConsoleHostedService>();
+            return services.BuildServiceProvider();
         }
 
         static IBusControl ConfigureBus(IServiceProvider provider)

@@ -21,7 +21,7 @@ namespace MTEncTest
             var messageData = await _messageDataRepository.GetBytes(context.Message.LargePayload.Address);
             var payload = await messageData.Value;
 
-            Console.WriteLine("Request received - LargePayload.Length={0}", payload.Length);
+            Console.WriteLine("  Request consumed - LargePayload.Length={0}", payload.Length);
 
             var fileData = await File.ReadAllBytesAsync("italia.jpg");
             var message = new TestResponse();
@@ -29,7 +29,7 @@ namespace MTEncTest
 
             await context.RespondAsync<TestResponse>(message);
 
-            Console.WriteLine("  Responded contains LargePayload.Length={0}", payload.Length);
+            Console.WriteLine("  Responded with LargePayload.Length={0}", payload.Length);
         }
     }
 }

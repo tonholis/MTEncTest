@@ -1,23 +1,21 @@
 ﻿using System;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using MassTransit;
 using MassTransit.ExtensionsLoggingIntegration;
 using MassTransit.Logging;
 using MassTransit.Logging.Tracing;
 using MassTransit.MessageData;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace MTEncTest
 {
-    public class MassTransitConsoleHostedService : IHostedService
+    public class App 
     {
         readonly IBusControl _bus;
         private readonly IMessageDataRepository _messageDataRepository;
 
-        public MassTransitConsoleHostedService(
+        public App(
             IBusControl bus,
             ILoggerFactory loggerFactory,
             IMessageDataRepository messageDataRepository)
@@ -29,31 +27,36 @@ namespace MTEncTest
                 ExtensionsLogger.Use(loggerFactory);
         }
 
-        public async Task StartAsync(CancellationToken cancellationToken)
+        public async Task Run()
         {
-            await _bus.StartAsync(cancellationToken).ConfigureAwait(false);
+            await _bus.StartAsync();
 
-            await RunTests();
+            try
+            {
+                var fileData = await File.ReadAllBytesAsync("italia.jpg");
+
+                //await TestPublishing(fileData);
+
+                await TestRequestResponse(fileData);
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                await _bus.StopAsync();
+            }
         }
 
-        public async Task StopAsync(CancellationToken cancellationToken)
-        {
-            await _bus.StopAsync(cancellationToken).ConfigureAwait(false);
-        }
 
-        private async Task RunTests()
+        private async Task TestPublishing(byte[] fileData)
         {
-            var fileData = await File.ReadAllBytesAsync("italia.jpg");
-
-            ////simple message using publish
             var message = new TestMessage();
             message.LargePayload = await _messageDataRepository.PutBytes(fileData);
 
             await _bus.Publish(message);
-            Console.WriteLine("Message published - LargePayload size {0}", fileData.Length);
-
-
-            await TestRequestResponse(fileData);
+            Console.WriteLine("Message published - LargePayload.Length={0}", fileData.Length);
         }
 
         private async Task TestRequestResponse(byte[] fileData)
@@ -69,7 +72,7 @@ namespace MTEncTest
             var messageData = await _messageDataRepository.GetBytes(response.Message.LargePayload.Address);
             var payload = await messageData.Value;
 
-            Console.WriteLine("Response received - LargePayload size {0}", payload.Length);
+            Console.WriteLine("Response received - LargePayload.Length={0}", payload.Length);
         }
     }
 }
