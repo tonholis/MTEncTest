@@ -46,23 +46,30 @@ namespace MTEncTest
             var fileData = await File.ReadAllBytesAsync("italia.jpg");
 
             ////simple message using publish
-            //var message = new TestMessage();
-            //message.LargePayload = await _messageDataRepository.PutBytes(fileData);
+            var message = new TestMessage();
+            message.LargePayload = await _messageDataRepository.PutBytes(fileData);
 
-            //await _bus.Publish(message);
-            //Console.WriteLine("Message published - LargePayload size {0}", fileData.Length);
+            await _bus.Publish(message);
+            Console.WriteLine("Message published - LargePayload size {0}", fileData.Length);
 
-            //message using request/response
-            var request = new TestRequestImpl();
+
+            await TestRequestResponse(fileData);
+        }
+
+        private async Task TestRequestResponse(byte[] fileData)
+        {
+            var request = new TestRequest();
             request.LargePayload = await _messageDataRepository.PutBytes(fileData);
 
             Console.WriteLine("Sending TestRequest...");
             var client = _bus.CreateRequestClient<TestRequest>(Program.TestRequestConsumerUri);
             var response = await client.GetResponse<TestResponse>(request);
-            var responsePayload = await response.Message.LargePayload.Value;
 
-            Console.WriteLine("Response received - LargePayload size {0}", responsePayload.Length);
-            
+            //var payload = await response.Message.LargePayload.Value; //doesn't work
+            var messageData = await _messageDataRepository.GetBytes(response.Message.LargePayload.Address);
+            var payload = await messageData.Value;
+
+            Console.WriteLine("Response received - LargePayload size {0}", payload.Length);
         }
     }
 }

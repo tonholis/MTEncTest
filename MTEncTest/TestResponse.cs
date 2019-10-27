@@ -2,12 +2,7 @@
 
 namespace MTEncTest
 {
-    public interface TestResponse
-    {
-        MessageData<byte[]> LargePayload { get; }
-    }
-
-    public class TestResponseImpl
+    public class TestResponse
     {
         public MessageData<byte[]> LargePayload { get; set; }
     }

@@ -17,19 +17,19 @@ namespace MTEncTest
 
         public async Task Consume(ConsumeContext<TestRequest> context)
         {
-            //var payload = await context.Message.LargePayload.Value;
+            //var payload = await context.Message.LargePayload.Value; //doesn't work
             var messageData = await _messageDataRepository.GetBytes(context.Message.LargePayload.Address);
             var payload = await messageData.Value;
 
             Console.WriteLine("Request received - LargePayload.Length={0}", payload.Length);
 
             var fileData = await File.ReadAllBytesAsync("italia.jpg");
-            var message = new TestResponseImpl();
+            var message = new TestResponse();
             message.LargePayload = await _messageDataRepository.PutBytes(fileData);
 
             await context.RespondAsync<TestResponse>(message);
 
-            Console.WriteLine("  Message responded - LargePayload.Length={0}", payload.Length);
+            Console.WriteLine("  Responded contains LargePayload.Length={0}", payload.Length);
         }
     }
 }
