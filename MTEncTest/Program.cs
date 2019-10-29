@@ -1,10 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using MassTransit;
 using MassTransit.MessageData;
-using MassTransit.MongoDbIntegration.MessageData;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace MTEncTest
 {
@@ -14,70 +12,67 @@ namespace MTEncTest
 
         static async Task Main(string[] args)
         {
-            var serviceProvider = ConfigureServices();
-
-            serviceProvider
-                .GetService<ILoggerFactory>()
-                .AddConsole(LogLevel.Debug);
-
-            await serviceProvider.GetService<App>().Run();
-        }
-
-        static ServiceProvider ConfigureServices()
-        {
-            var services = new ServiceCollection();
-
-            services.AddLogging();
-
-            services.AddScoped<App>();
-
-            //services.AddSingleton<IMessageDataRepository>(provider =>
-            //{
-            //    return new MongoDbMessageDataRepository("mongodb://localhost", "testdb");
-            //});
-
-            services.AddSingleton<IMessageDataRepository>(provider =>
+			var key = new byte[]
             {
-                return new InMemoryMessageDataRepository();
-            });
+                115, 171, 121, 43, 89, 24, 199, 205, 23,
+                221, 178, 104, 163, 32, 45, 84, 171, 86,
+                93, 13, 198, 132, 38, 65, 130, 192, 6,
+                159, 227, 104, 245, 222
+            };
 
-            services.AddMassTransit(cfg =>
-            {
-                cfg.AddBus(ConfigureBus);
-                cfg.AddConsumer<TestMessageConsumer>();
-                cfg.AddConsumer<TestRequestConsumer>();
-                cfg.AddRequestClient<TestRequest>();
-            });
+			// var repo = new MongoDbMessageDataRepository("mongodb://localhost", "test-mongodb-database");
+			var repo = new InMemoryMessageDataRepository();
+			
+            var bus = Bus.Factory.CreateUsingInMemory(sbc =>
+			{
+				sbc.UseEncryption(key);
+				sbc.UseMessageData(repo);
 
-            return services.BuildServiceProvider();
-        }
+                sbc.ReceiveEndpoint(ep =>
+				{
+					ep.Handler<TestRequest>(async context =>
+					{
+						await Console.Out.WriteLineAsync("Received...").ConfigureAwait(false);
 
-        static IBusControl ConfigureBus(IServiceProvider provider)
-        {
-            return Bus.Factory.CreateUsingRabbitMq(cfg =>
-            {
-                var host = cfg.Host("localhost", "/");
+						var v1 = await context.Message.Payload.Value.ConfigureAwait(false);
+						await Console.Out.WriteLineAsync($"v1: {v1.Length}").ConfigureAwait(false);
 
-                var messageDataRepository = provider.GetRequiredService<IMessageDataRepository>();
-                cfg.UseMessageData<TestMessage>(messageDataRepository);
-                cfg.UseMessageData<TestRequest>(messageDataRepository);
-                cfg.UseMessageData<TestResponse>(messageDataRepository);
+						// var v2 = await context.Message.Nested.Payload.Value.ConfigureAwait(false);
+						// await Console.Out.WriteLineAsync($"v2: {v2.Length}").ConfigureAwait(false);
+						
+                        foreach (var item in context.Message.Nested.List)
+							await Console.Out.WriteLineAsync($"Item n: {item.Number}");					
 
-                var key = new byte[32] { 115, 171, 121, 43, 89, 24, 199, 205, 23, 221, 178, 104, 163, 32, 45, 84, 171, 86, 93, 13, 198, 132, 38, 65, 130, 192, 6, 159, 227, 104, 245, 222 };
+                        await context.RespondAsync(new TestResponse {
+							Payload = await repo.PutBytes(key)
+                        });
+					});
+				});
+			});
 
-                cfg.ReceiveEndpoint(host, "test-queue", e => {
-                    //e.UseEncryption(key);
+			bus.Start();
 
-                    e.ConfigureConsumer<TestMessageConsumer>(provider);
-                });
+            var client = bus.CreateRequestClient<TestRequest>();
+            var request = new TestRequest {
+                Payload = await repo.PutBytes(key),
+				Nested = new Foo {
+					// Payload = await repo.PutBytes(key),
+					List = new List<Bar>() {
+                        new Bar { Number = 999, Payload = await repo.PutBytes(key) },
+						new Bar { Number = 888, Payload = await repo.PutBytes(key) }
+                    }
+                }   
+            };
 
-                cfg.ReceiveEndpoint(host, "test-req-res-queue", e => {
-                    e.UseEncryption(key);
+			var response = await client.GetResponse<TestResponse>(request);
+			// var responseValue = await response.Message.Payload.Value; //raises 'The message data was not loaded'
+			var responseValue = await (await repo.GetBytes(response.Message.Payload.Address)).Value;
+            Console.WriteLine($"Response value length: {responseValue.Length}");
 
-                    e.ConfigureConsumer<TestRequestConsumer>(provider);
-                    TestRequestConsumerUri = e.InputAddress;
-                });
-            });
+			Console.WriteLine("Press any key to exit");
+			Console.ReadKey();
+
+			bus.Stop();
         }
     }
 }
