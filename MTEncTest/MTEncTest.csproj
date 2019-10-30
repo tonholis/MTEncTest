@@ -5,8 +5,8 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MassTransit.RabbitMQ" Version="6.0.0-develop.2231" />
-    <PackageReference Include="MassTransit.MongoDb" Version="6.0.0-develop.2231" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="6.0.0-develop.2240" />
+    <PackageReference Include="MassTransit.MongoDb" Version="6.0.0-develop.2240" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="italia.jpg" />

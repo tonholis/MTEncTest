@@ -32,16 +32,8 @@ namespace MTEncTest
 				{
 					ep.Handler<TestRequest>(async context =>
 					{
-						await Console.Out.WriteLineAsync("Received...").ConfigureAwait(false);
-
-						var v1 = await context.Message.Payload.Value.ConfigureAwait(false);
-						await Console.Out.WriteLineAsync($"v1: {v1.Length}").ConfigureAwait(false);
-
-						// var v2 = await context.Message.Nested.Payload.Value.ConfigureAwait(false);
-						// await Console.Out.WriteLineAsync($"v2: {v2.Length}").ConfigureAwait(false);
-						
-                        foreach (var item in context.Message.Nested.List)
-							await Console.Out.WriteLineAsync($"Item n: {item.Number}");					
+						Console.WriteLine("MESSAGE RECEIVED...");
+						await DebugMessage(context.Message);
 
                         await context.RespondAsync(new TestResponse {
 							Payload = await repo.PutBytes(key)
@@ -55,14 +47,20 @@ namespace MTEncTest
             var client = bus.CreateRequestClient<TestRequest>();
             var request = new TestRequest {
                 Payload = await repo.PutBytes(key),
-				Nested = new Foo {
-					// Payload = await repo.PutBytes(key),
+				Child = new Foo {
+					Payload = await repo.PutBytes(key),
+					Text = "Child object",
 					List = new List<Bar>() {
-                        new Bar { Number = 999, Payload = await repo.PutBytes(key) },
-						new Bar { Number = 888, Payload = await repo.PutBytes(key) }
+                        new Bar { Number = 999, Date = DateTime.Now, Text = "It barks", Enum = AnimalType.Dog, Payload = await repo.PutBytes(key) }
                     }
-                }   
+                },
+				List = new List<Bar>() {
+					new Bar { Number = 888, Date = DateTime.Now.AddDays(1), Text = "It meows", Enum = AnimalType.Cat, Payload = await repo.PutBytes(key) }
+				}
             };
+			
+			Console.WriteLine("SENDING REQUEST...");
+			await DebugMessage(request);
 
 			var response = await client.GetResponse<TestResponse>(request);
 			// var responseValue = await response.Message.Payload.Value; //raises 'The message data was not loaded'
@@ -74,5 +72,35 @@ namespace MTEncTest
 
 			bus.Stop();
         }
+
+		static async Task DebugMessage(TestRequest message)
+		{
+			Console.WriteLine("-----------");
+
+			var rootPayload = await message.Payload.Value.ConfigureAwait(false);
+			Console.WriteLine($"Message.Payload.Lengtht={rootPayload.Length}");
+
+			//.Child details
+			var childPayload = await message.Child.Payload.Value.ConfigureAwait(false);
+			Console.WriteLine($"Message.Child.Payload.Length={childPayload.Length}");
+			Console.WriteLine($"Message.Child.Text={message.Child.Text}");
+
+			int index = 0;
+			foreach (var item in message.Child.List)
+			{
+				var pl = await item.Payload.Value.ConfigureAwait(false);
+				Console.WriteLine($"Message.Child.List[{index++}] - Number={item.Number}, Text={item.Text}, Enum={item.Enum}, Date={item.Date}, Payload size={pl.Length}");
+			}
+
+			//.List details
+			index=0;
+			foreach (var item in message.List)
+			{
+				var pl = await item.Payload.Value.ConfigureAwait(false);
+				Console.WriteLine($"Message.List[{index++}] - Number={item.Number}, Text={item.Text}, Enum={item.Enum}, Date={item.Date}, Payload size={pl.Length}");
+			}
+
+			Console.WriteLine("-----------");
+		}
     }
 }
