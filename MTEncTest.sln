@@ -1,7 +1,11 @@
 
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MTEncTest", "MTEncTest\MTEncTest.csproj", "{5902BC2A-5299-4FA1-8177-B974A2284C5E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageData.Service", "MessageData.Service\MessageData.Service.csproj", "{5902BC2A-5299-4FA1-8177-B974A2284C5E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageData.Components", "MessageData.Components\MessageData.Components.csproj", "{875E37CC-8707-41B8-A0DC-5733DAB91AA7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageData.Components.Tests", "MessageData.Components.Tests\MessageData.Components.Tests.csproj", "{3D2B2E59-A3FE-4FBB-B065-F74C2B849695}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,5 +17,13 @@ Global
 		{5902BC2A-5299-4FA1-8177-B974A2284C5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5902BC2A-5299-4FA1-8177-B974A2284C5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5902BC2A-5299-4FA1-8177-B974A2284C5E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{875E37CC-8707-41B8-A0DC-5733DAB91AA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{875E37CC-8707-41B8-A0DC-5733DAB91AA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{875E37CC-8707-41B8-A0DC-5733DAB91AA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{875E37CC-8707-41B8-A0DC-5733DAB91AA7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D2B2E59-A3FE-4FBB-B065-F74C2B849695}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D2B2E59-A3FE-4FBB-B065-F74C2B849695}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D2B2E59-A3FE-4FBB-B065-F74C2B849695}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D2B2E59-A3FE-4FBB-B065-F74C2B849695}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
