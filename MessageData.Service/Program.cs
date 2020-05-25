@@ -41,7 +41,6 @@ namespace MessageData.Service
             try
             {
                 await SendTest(bus, repo);
-                await SendTest(bus, repo, false);
             }
             finally
             {
@@ -49,7 +48,7 @@ namespace MessageData.Service
             }
         }
 
-        private static async Task SendTest(IBusControl bus, IMessageDataRepository repo, bool isRequest = true)
+        private static async Task SendTest(IBusControl bus, IMessageDataRepository repo)
         {
             var someData = new byte[] {221, 178, 104, 163};
             var fileData = await File.ReadAllBytesAsync("flag.jpg");
@@ -84,27 +83,23 @@ namespace MessageData.Service
 
             Console.WriteLine("SENDING REQUEST...");
             await DebugMessage(requestMessage);
-
+            
             var response = await requestClient.GetResponse<TestResponse>(requestMessage);
-
-            var responseMdValue = await response.Message.Payload.Value;
-            Console.WriteLine($"MessageData value in the response message, length: {responseMdValue.Length}");
+            Console.WriteLine($"response.Message.OriginalRequest:");
             await DebugMessage(response.Message.OriginalRequest);
         }
 
         private static async Task DebugMessage(TestRequest message)
         {
-            Console.WriteLine("-----------");
-
             var rootData = await message.Data1.Value;
             Console.WriteLine($"Message.Data1.Length={rootData.Length}");
 
-            //.Child details
+            //MessageData inside nested object
             var childData = await message.Foo.Data2.Value;
             Console.WriteLine($"Message.Foo.Data2.Length={childData.Length}");
             Console.WriteLine($"Message.Foo.Text={message.Foo.Text}");
 
-            //.List details
+            //MessageData inside lists/arrays
             var index = 0;
             foreach (var item in message.Bars)
             {
@@ -120,7 +115,7 @@ namespace MessageData.Service
                 Console.WriteLine(
                     $"Message.Foo.Bars[{index++}] - Number={item.Number}, Text={item.Text}, Enum={item.Enum}, Date={item.Date}, Data3.Length={itemData.Length}");
             }
-
+            
             Console.WriteLine("-----------");
         }
     }

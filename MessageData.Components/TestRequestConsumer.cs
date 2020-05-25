@@ -19,7 +19,23 @@ namespace MessageData.Components
         public async Task Consume(ConsumeContext<TestRequest> context)
         {
             Console.WriteLine("Message received in the consumer");
-            Console.WriteLine($"  Message.Foo.Text={context.Message.Foo.Text}");
+            Console.WriteLine($" Message.Data1.Length={context.Message.Data1.Value.Result.Length}");
+            Console.WriteLine($" Message.Foo.Text={context.Message.Foo.Text}");
+            
+            //MessageData inside lists/arrays
+            var index = 0;
+            foreach (var item in context.Message.Bars)
+            {
+                var itemData = await item.Data3.Value;
+                Console.WriteLine($" Message.Bars[{index++}] - Number={item.Number}, Text={item.Text}, Enum={item.Enum}, Date={item.Date}, Data3.Length={itemData.Length}");
+            }
+
+            index = 0;
+            foreach (var item in context.Message.Foo.Bars)
+            {
+                var itemData = await item.Data3.Value;
+                Console.WriteLine($" Message.Foo.Bars[{index++}] - Number={item.Number}, Text={item.Text}, Enum={item.Enum}, Date={item.Date}, Data3.Length={itemData.Length}");
+            }
             
             var data1 = await context.Message.Data1.Value;
 
@@ -36,6 +52,8 @@ namespace MessageData.Components
                     Payload = await _messageDataRepository.PutBytes(data1)
                 });
             }
+            
+            Console.WriteLine("-----------");
         }
     }
 }
