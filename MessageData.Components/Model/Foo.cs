@@ -6,7 +6,7 @@ namespace MessageData.Components.Model
     {
         MessageData<byte[]> Data2 { get; }
 		
-        string Text { get; }
+        string WhateverText { get; }
 
         Bar[] Bars { get; }
     }

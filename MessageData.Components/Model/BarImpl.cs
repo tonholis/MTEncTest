@@ -5,10 +5,10 @@ namespace MessageData.Components.Model
 {
     public class BarImpl : Bar
     {
-        public int Number { get; set; }
-        public string Text { get; set; }
-        public AnimalType Enum { get; set; }
-        public DateTime Date { get; set; }
+        public int WhateverNumber { get; set; }
+        public string WhateverText { get; set; }
+        public AnimalType WhateverEnum { get; set; }
+        public DateTime WhateverDate { get; set; }
         public MessageData<byte[]> Data3 { get; set; }
     }
 }

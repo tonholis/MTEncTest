@@ -18,7 +18,7 @@ namespace MessageData.Components.Tests
         {
             var harness = new InMemoryTestHarness {TestTimeout = TimeSpan.FromSeconds(5)};
             var repo = new InMemoryMessageDataRepository();
-            var consumer = harness.Consumer(() => new TestRequestConsumer(repo));
+            var consumer = harness.Consumer(() => new DoSomethingConsumer(repo));
             
             var someBytes = new byte[]
             {
@@ -28,17 +28,17 @@ namespace MessageData.Components.Tests
                 159, 227, 104, 245, 222
             };
             
-            var requestMessage = new TestRequestImpl {
+            var requestMessage = new DoSomethingImpl {
                 Data1 = await repo.PutBytes(someBytes),
                 Foo = new FooImpl {
                     Data2 = await repo.PutBytes(someBytes),
-                    Text = "Wild world",
+                    WhateverText = "Wild world",
                     Bars = new Bar[] {
-                        new BarImpl { Number = 999, Date = DateTime.Now, Text = "It barks", Enum = AnimalType.Dog, Data3 = await repo.PutBytes(someBytes) }
+                        new BarImpl { WhateverNumber = 999, WhateverDate = DateTime.Now, WhateverText = "It barks", WhateverEnum = AnimalType.Dog, Data3 = await repo.PutBytes(someBytes) }
                     }
                 },
                 Bars = new Bar[] {
-                    new BarImpl { Number = 888, Date = DateTime.Now.AddDays(1), Text = "It meows", Enum = AnimalType.Cat, Data3 = await repo.PutBytes(someBytes) }
+                    new BarImpl { WhateverNumber = 888, WhateverDate = DateTime.Now.AddDays(1), WhateverText = "It meows", WhateverEnum = AnimalType.Cat, Data3 = await repo.PutBytes(someBytes) }
                 }
             };
 
@@ -46,17 +46,17 @@ namespace MessageData.Components.Tests
             
             try
             {
-                var requestClient = await harness.ConnectRequestClient<TestRequest>();
-                var response = await requestClient.GetResponse<TestResponse>(requestMessage);
+                var requestClient = await harness.ConnectRequestClient<DoSomething>();
+                var response = await requestClient.GetResponse<SomethingDone>(requestMessage);
              
-                Assert.That(consumer.Consumed.Select<TestRequest>().Any(), Is.True);
+                Assert.That(consumer.Consumed.Select<DoSomething>().Any(), Is.True);
 
-                Assert.That(response.Message.Payload.HasValue, Is.True);
+                Assert.That(response.Message.File.HasValue, Is.True);
 
-                var responsePayloadValue = await response.Message.Payload.Value;
+                var responsePayloadValue = await response.Message.File.Value;
                 Assert.AreEqual(someBytes.Length, responsePayloadValue.Length);
 
-                var consumedMessage = consumer.Consumed.Select<TestRequest>().First().Context.Message;
+                var consumedMessage = consumer.Consumed.Select<DoSomething>().First().Context.Message;
                 var b1 = requestMessage.Bars.First();
                 var b2 = consumedMessage.Bars.First();
                 
@@ -66,12 +66,12 @@ namespace MessageData.Components.Tests
                 Assert.AreEqual(b1.Data3.Value.Result, b2.Data3.Value.Result);
 
                 //check other props
-                Assert.AreEqual(requestMessage.Foo.Text, consumedMessage.Foo.Text);
+                Assert.AreEqual(requestMessage.Foo.WhateverText, consumedMessage.Foo.WhateverText);
                 
-                Assert.AreEqual(b1.Date, b2.Date);
-                Assert.AreEqual(b1.Enum, b2.Enum);
-                Assert.AreEqual(b1.Number, b2.Number);
-                Assert.AreEqual(b1.Text, b2.Text);
+                Assert.AreEqual(b1.WhateverDate, b2.WhateverDate);
+                Assert.AreEqual(b1.WhateverEnum, b2.WhateverEnum);
+                Assert.AreEqual(b1.WhateverNumber, b2.WhateverNumber);
+                Assert.AreEqual(b1.WhateverText, b2.WhateverText);
             }
             finally
             {
@@ -84,7 +84,7 @@ namespace MessageData.Components.Tests
         {
             var harness = new InMemoryTestHarness {TestTimeout = TimeSpan.FromSeconds(5)};
             var repo = new InMemoryMessageDataRepository();
-            var consumer = harness.Consumer(() => new TestRequestConsumer(repo));
+            var consumer = harness.Consumer(() => new DoSomethingConsumer(repo));
             
             var someBytes = new byte[]
             {
@@ -94,17 +94,17 @@ namespace MessageData.Components.Tests
                 159, 227, 104, 245, 222
             };
 
-            var command = new TestRequestImpl {
+            var command = new DoSomethingImpl {
                 Data1 = await repo.PutBytes(someBytes),
                 Foo = new FooImpl {
                     Data2 = await repo.PutBytes(someBytes),
-                    Text = "SEND",
+                    WhateverText = "SEND",
                     Bars = new Bar[] {
-                        new BarImpl { Number = 999, Date = DateTime.Now, Text = "It barks", Enum = AnimalType.Dog, Data3 = await repo.PutBytes(someBytes) }
+                        new BarImpl { WhateverNumber = 999, WhateverDate = DateTime.Now, WhateverText = "It barks", WhateverEnum = AnimalType.Dog, Data3 = await repo.PutBytes(someBytes) }
                     }
                 },
                 Bars = new Bar[] {
-                    new BarImpl { Number = 888, Date = DateTime.Now.AddDays(1), Text = "It meows", Enum = AnimalType.Cat, Data3 = await repo.PutBytes(someBytes) }
+                    new BarImpl { WhateverNumber = 888, WhateverDate = DateTime.Now.AddDays(1), WhateverText = "It meows", WhateverEnum = AnimalType.Cat, Data3 = await repo.PutBytes(someBytes) }
                 }
             };
 
@@ -112,19 +112,19 @@ namespace MessageData.Components.Tests
             
             try
             {
-                await harness.InputQueueSendEndpoint.Send<TestRequest>(command);
+                await harness.InputQueueSendEndpoint.Send<DoSomething>(command);
 
-                Assert.That(consumer.Consumed.Select<TestRequest>().Any(), Is.True);
-                Assert.That(harness.Published.Select<TestResponse>().Any(), Is.True);
+                Assert.That(consumer.Consumed.Select<DoSomething>().Any(), Is.True);
+                Assert.That(harness.Published.Select<SomethingDone>().Any(), Is.True);
 
-                var response = harness.Published.Select<TestResponse>().First().Context;
+                var response = harness.Published.Select<SomethingDone>().First().Context;
                 
-                Assert.That(response.Message.Payload.HasValue, Is.True);
+                Assert.That(response.Message.File.HasValue, Is.True);
 
-                var responsePayloadValue = await response.Message.Payload.Value;
+                var responsePayloadValue = await response.Message.File.Value;
                 Assert.AreEqual(someBytes.Length, responsePayloadValue.Length);
 
-                var consumedMessage = consumer.Consumed.Select<TestRequest>().First().Context.Message;
+                var consumedMessage = consumer.Consumed.Select<DoSomething>().First().Context.Message;
                 
                 var b1 = command.Bars.First();
                 var b2 = consumedMessage.Bars.First();
@@ -135,12 +135,12 @@ namespace MessageData.Components.Tests
                 Assert.AreEqual(b1.Data3.Value.Result, b2.Data3.Value.Result);
 
                 //check other props
-                Assert.AreEqual(command.Foo.Text, consumedMessage.Foo.Text);
+                Assert.AreEqual(command.Foo.WhateverText, consumedMessage.Foo.WhateverText);
                 
-                Assert.AreEqual(b1.Date, b2.Date);
-                Assert.AreEqual(b1.Enum, b2.Enum);
-                Assert.AreEqual(b1.Number, b2.Number);
-                Assert.AreEqual(b1.Text, b2.Text);
+                Assert.AreEqual(b1.WhateverDate, b2.WhateverDate);
+                Assert.AreEqual(b1.WhateverEnum, b2.WhateverEnum);
+                Assert.AreEqual(b1.WhateverNumber, b2.WhateverNumber);
+                Assert.AreEqual(b1.WhateverText, b2.WhateverText);
                 
                 Assert.AreEqual(b1, b2);
             }

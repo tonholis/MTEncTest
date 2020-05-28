@@ -5,12 +5,12 @@ namespace MessageData.Components.Model
 {
     public interface Bar
     {
-        int Number { get; }
-        string Text { get; }
+        int WhateverNumber { get; }
+        string WhateverText { get; }
 		
-        AnimalType Enum { get; }
+        AnimalType WhateverEnum { get; }
 
-        DateTime Date { get; }
+        DateTime WhateverDate { get; }
 
         MessageData<byte[]> Data3 { get; }
     }
