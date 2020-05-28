@@ -3,12 +3,14 @@ using MessageData.Components.Model;
 
 namespace MessageData.Components.Messages
 {
-    public interface DoSomething
+    public interface Message2
     {
-        MessageData<byte[]> Data1 { get; }
-
+        MessageData<byte[]> File { get; }
+        
         Foo Foo { get; }
 
         Bar[] Bars { get; }
+        
+        string TopText { get; }
     }
 }

@@ -4,9 +4,9 @@ namespace MessageData.Components.Model
 {
     public interface Foo
     {
-        MessageData<byte[]> Data2 { get; }
+        MessageData<byte[]> File { get; }
 		
-        string WhateverText { get; }
+        string SomeText { get; }
 
         Bar[] Bars { get; }
     }

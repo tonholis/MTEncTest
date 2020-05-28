@@ -5,13 +5,13 @@ namespace MessageData.Components.Model
 {
     public interface Bar
     {
-        int WhateverNumber { get; }
-        string WhateverText { get; }
+        int SomeNumber { get; }
+        string SomeText { get; }
 		
-        AnimalType WhateverEnum { get; }
+        AnimalType SomeEnum { get; }
 
-        DateTime WhateverDate { get; }
+        DateTime SomeDatetime { get; }
 
-        MessageData<byte[]> Data3 { get; }
+        MessageData<byte[]> File { get; }
     }
 }

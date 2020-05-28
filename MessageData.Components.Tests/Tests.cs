@@ -13,142 +13,209 @@ namespace MessageData.Components.Tests
     [TestFixture]
     public class MessageDataTests
     {
-        [Test]
-        public async Task Should_handle_nested_message_data_using_request_response()
+        private async Task<Message2> CreateMessage2(IMessageDataRepository repo)
         {
-            var harness = new InMemoryTestHarness {TestTimeout = TimeSpan.FromSeconds(5)};
-            var repo = new InMemoryMessageDataRepository();
-            var consumer = harness.Consumer(() => new DoSomethingConsumer(repo));
+            var someBytes = new byte[] {115, 171, 121, 43};
             
-            var someBytes = new byte[]
-            {
-                115, 171, 121, 43, 89, 24, 199, 205, 23,
-                221, 178, 104, 163, 32, 45, 84, 171, 86,
-                93, 13, 198, 132, 38, 65, 130, 192, 6,
-                159, 227, 104, 245, 222
-            };
-            
-            var requestMessage = new DoSomethingImpl {
-                Data1 = await repo.PutBytes(someBytes),
+            return new Message2Impl {
+                TopText = "A message WITH messageData at the top-level",
+                File = await repo.PutBytes(someBytes),
                 Foo = new FooImpl {
-                    Data2 = await repo.PutBytes(someBytes),
-                    WhateverText = "Wild world",
+                    File = await repo.PutBytes(someBytes),
+                    SomeText = "Animal world",
                     Bars = new Bar[] {
-                        new BarImpl { WhateverNumber = 999, WhateverDate = DateTime.Now, WhateverText = "It barks", WhateverEnum = AnimalType.Dog, Data3 = await repo.PutBytes(someBytes) }
+                        new BarImpl
+                        {
+                            SomeNumber = 999,
+                            SomeDatetime = DateTime.Now,
+                            SomeText = "It barks",
+                            SomeEnum = AnimalType.Dog,
+                            File = await repo.PutBytes(someBytes)
+                        }
                     }
                 },
                 Bars = new Bar[] {
-                    new BarImpl { WhateverNumber = 888, WhateverDate = DateTime.Now.AddDays(1), WhateverText = "It meows", WhateverEnum = AnimalType.Cat, Data3 = await repo.PutBytes(someBytes) }
+                    new BarImpl
+                    {
+                        SomeNumber = 888,
+                        SomeDatetime = DateTime.Now.AddDays(1),
+                        SomeText = "It meows",
+                        SomeEnum = AnimalType.Cat,
+                        File = await repo.PutBytes(someBytes)
+                    }
                 }
             };
+        }
+        private async Task<Message1> CreateMessage1(IMessageDataRepository repo)
+        {
+            var someBytes = new byte[] {115, 171, 121, 43};
+            
+            return new Message1Impl {
+                TopText = "A message with NO MESSAGEDATA at the top-level",
+                Foo = new FooImpl {
+                    File = await repo.PutBytes(someBytes),
+                    SomeText = "Animal world",
+                    Bars = new Bar[] {
+                        new BarImpl
+                        {
+                            SomeNumber = 999,
+                            SomeDatetime = DateTime.Now,
+                            SomeText = "It barks",
+                            SomeEnum = AnimalType.Dog,
+                            File = await repo.PutBytes(someBytes)
+                        }
+                    }
+                },
+                Bars = new Bar[] {
+                    new BarImpl
+                    {
+                        SomeNumber = 888,
+                        SomeDatetime = DateTime.Now.AddDays(1),
+                        SomeText = "It meows",
+                        SomeEnum = AnimalType.Cat,
+                        File = await repo.PutBytes(someBytes)
+                    }
+                }
+            };
+        }
+
+        [Test]
+        public async Task Should_work_when_no_message_data_at_top_level()
+        {
+            var harness = new InMemoryTestHarness {TestTimeout = TimeSpan.FromSeconds(5)};
+            var repo = new InMemoryMessageDataRepository();
+            var consumer = harness.Consumer(() => new Message1Consumer(repo));
+            var request = await CreateMessage1(repo);
 
             await harness.Start();
             
             try
             {
-                var requestClient = await harness.ConnectRequestClient<DoSomething>();
-                var response = await requestClient.GetResponse<SomethingDone>(requestMessage);
+                var requestClient = await harness.ConnectRequestClient<Message1>();
+                var response = await requestClient.GetResponse<Message1Completed>(request);
              
-                Assert.That(consumer.Consumed.Select<DoSomething>().Any(), Is.True);
-
-                Assert.That(response.Message.File.HasValue, Is.True);
-
-                var responsePayloadValue = await response.Message.File.Value;
-                Assert.AreEqual(someBytes.Length, responsePayloadValue.Length);
-
-                var consumedMessage = consumer.Consumed.Select<DoSomething>().First().Context.Message;
-                var b1 = requestMessage.Bars.First();
-                var b2 = consumedMessage.Bars.First();
+                //checking the consumed message
+                Assert.That(consumer.Consumed.Select<Message1>().Any(), Is.True);
                 
-                //check MessageData in all levels
-                Assert.AreEqual(requestMessage.Data1.Value.Result, consumedMessage.Data1.Value.Result);
-                Assert.AreEqual(requestMessage.Foo.Data2.Value.Result, consumedMessage.Foo.Data2.Value.Result);
-                Assert.AreEqual(b1.Data3.Value.Result, b2.Data3.Value.Result);
+                var consumedMessage = consumer.Consumed.Select<Message1>().First().Context.Message;
 
-                //check other props
-                Assert.AreEqual(requestMessage.Foo.WhateverText, consumedMessage.Foo.WhateverText);
+                //checking main data consumed
+                Assert.That(consumedMessage.TopText, Is.Not.Null);
+                Assert.That(consumedMessage.Foo, Is.Not.Null);
+                Assert.That(consumedMessage.Bars, Is.Not.Null);
                 
-                Assert.AreEqual(b1.WhateverDate, b2.WhateverDate);
-                Assert.AreEqual(b1.WhateverEnum, b2.WhateverEnum);
-                Assert.AreEqual(b1.WhateverNumber, b2.WhateverNumber);
-                Assert.AreEqual(b1.WhateverText, b2.WhateverText);
+                //checking Foo consumed
+                Assert.That(consumedMessage.Foo.SomeText, Is.Not.Null);
+                Assert.That(consumedMessage.Foo.File, Is.Not.Null);
+                Assert.That(consumedMessage.Foo.Bars, Is.Not.Null);
+
+                //checking the response received back
+                Assert.That(response.Message.File, Is.Not.Null);
+                Assert.That(response.Message.TopText, Is.Not.Null);
+                Assert.That(response.Message.DataReceived, Is.Not.Null);
+                
+                Assert.That(response.Message.DataReceived.Bars, Is.Not.Null);
+                Assert.That(response.Message.DataReceived.Foo, Is.Not.Null);
+                Assert.That(response.Message.DataReceived.TopText, Is.Not.Null);
+                
+                //comparing data sent vs received
+                Assert.AreEqual(request.TopText, response.Message.DataReceived.TopText);
             }
             finally
             {
                 await harness.Stop();
             }
         }
-
+        
         [Test]
-        public async Task Should_handle_nested_message_data_using_send()
+        public async Task Should_work_when_message_data_at_top_level()
         {
             var harness = new InMemoryTestHarness {TestTimeout = TimeSpan.FromSeconds(5)};
             var repo = new InMemoryMessageDataRepository();
-            var consumer = harness.Consumer(() => new DoSomethingConsumer(repo));
-            
-            var someBytes = new byte[]
-            {
-                115, 171, 121, 43, 89, 24, 199, 205, 23,
-                221, 178, 104, 163, 32, 45, 84, 171, 86,
-                93, 13, 198, 132, 38, 65, 130, 192, 6,
-                159, 227, 104, 245, 222
-            };
-
-            var command = new DoSomethingImpl {
-                Data1 = await repo.PutBytes(someBytes),
-                Foo = new FooImpl {
-                    Data2 = await repo.PutBytes(someBytes),
-                    WhateverText = "SEND",
-                    Bars = new Bar[] {
-                        new BarImpl { WhateverNumber = 999, WhateverDate = DateTime.Now, WhateverText = "It barks", WhateverEnum = AnimalType.Dog, Data3 = await repo.PutBytes(someBytes) }
-                    }
-                },
-                Bars = new Bar[] {
-                    new BarImpl { WhateverNumber = 888, WhateverDate = DateTime.Now.AddDays(1), WhateverText = "It meows", WhateverEnum = AnimalType.Cat, Data3 = await repo.PutBytes(someBytes) }
-                }
-            };
+            var consumer = harness.Consumer(() => new Message2Consumer(repo));
+            var request = await CreateMessage2(repo);
 
             await harness.Start();
             
             try
             {
-                await harness.InputQueueSendEndpoint.Send<DoSomething>(command);
-
-                Assert.That(consumer.Consumed.Select<DoSomething>().Any(), Is.True);
-                Assert.That(harness.Published.Select<SomethingDone>().Any(), Is.True);
-
-                var response = harness.Published.Select<SomethingDone>().First().Context;
+                var requestClient = await harness.ConnectRequestClient<Message2>();
+                var response = await requestClient.GetResponse<Message2Completed>(request);
+             
+                //checking the consumed message
+                Assert.That(consumer.Consumed.Select<Message2>().Any(), Is.True);
                 
+                var consumedMessage = consumer.Consumed.Select<Message2>().First().Context.Message;
+
+                //checking main data consumed
+                Assert.That(consumedMessage.File, Is.Not.Null);
+                Assert.That(consumedMessage.TopText, Is.Not.Null.Or.Empty);
+                Assert.That(consumedMessage.Foo, Is.Not.Null);
+                Assert.That(consumedMessage.Bars, Is.Not.Null);
+                
+                //checking Foo consumed
+                Assert.That(consumedMessage.Foo.SomeText, Is.Not.Null.Or.Empty);
+                Assert.That(consumedMessage.Foo.File, Is.Not.Null);
+                Assert.That(consumedMessage.Foo.Bars, Is.Not.Null);
+
+                //checking the response received back
+                Assert.That(response.Message.File, Is.Not.Null);
+                Assert.That(response.Message.TopText, Is.Not.Null.Or.Empty);
+                Assert.That(response.Message.DataReceived, Is.Not.Null);
+                
+                Assert.That(response.Message.DataReceived.File, Is.Not.Null);
+                Assert.That(response.Message.DataReceived.Bars, Is.Not.Null);
+                Assert.That(response.Message.DataReceived.Foo, Is.Not.Null);
+                Assert.That(response.Message.DataReceived.TopText, Is.Not.Null.Or.Empty);
+                
+                //comparing data sent vs received
+                Assert.AreEqual(request.TopText, response.Message.DataReceived.TopText);
+                Assert.AreEqual(request.Foo.SomeText, response.Message.DataReceived.Foo.SomeText);
+
                 Assert.That(response.Message.File.HasValue, Is.True);
-
-                var responsePayloadValue = await response.Message.File.Value;
-                Assert.AreEqual(someBytes.Length, responsePayloadValue.Length);
-
-                var consumedMessage = consumer.Consumed.Select<DoSomething>().First().Context.Message;
+                var receivedFile = await response.Message.File.Value;
+                Assert.That(receivedFile.Length, Is.GreaterThan(0));
                 
-                var b1 = command.Bars.First();
-                var b2 = consumedMessage.Bars.First();
-                
-                //check MessageData in all levels
-                Assert.AreEqual(command.Data1.Value.Result, consumedMessage.Data1.Value.Result);
-                Assert.AreEqual(command.Foo.Data2.Value.Result, consumedMessage.Foo.Data2.Value.Result);
-                Assert.AreEqual(b1.Data3.Value.Result, b2.Data3.Value.Result);
-
-                //check other props
-                Assert.AreEqual(command.Foo.WhateverText, consumedMessage.Foo.WhateverText);
-                
-                Assert.AreEqual(b1.WhateverDate, b2.WhateverDate);
-                Assert.AreEqual(b1.WhateverEnum, b2.WhateverEnum);
-                Assert.AreEqual(b1.WhateverNumber, b2.WhateverNumber);
-                Assert.AreEqual(b1.WhateverText, b2.WhateverText);
-                
-                Assert.AreEqual(b1, b2);
+                Assert.AreEqual(request.Foo.SomeText, consumedMessage.Foo.SomeText);
             }
             finally
             {
                 await harness.Stop();
             }
-
         }
+    }
+    
+    public class Message1Impl : Message1
+    {
+        public Foo Foo { get; set; }
+        public Bar[] Bars { get; set; }
+            
+        public string TopText { get; set; }
+    }
+    
+    public class Message2Impl : Message2
+    {
+        public MessageData<byte[]> File { get; set;  }
+        public Foo Foo { get; set; }
+        public Bar[] Bars { get; set; }
+            
+        public string TopText { get; set; }
+    }
+
+    public class FooImpl : Foo
+    {
+        public MessageData<byte[]> File { get; set; }
+        public string SomeText { get; set; }
+        public Bar[] Bars { get; set;}
+    }
+
+    public class BarImpl : Bar
+    {
+        public int SomeNumber { get; set; }
+        public string SomeText { get; set;}
+        public AnimalType SomeEnum { get; set;}
+        public DateTime SomeDatetime { get; set;}
+        
+        public MessageData<byte[]> File { get; set; }
     }
 } 
