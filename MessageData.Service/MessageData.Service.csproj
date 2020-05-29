@@ -5,9 +5,9 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MassTransit.Analyzers" Version="6.3.2" />
-    <PackageReference Include="MassTransit.RabbitMQ" Version="6.3.2" />
-    <PackageReference Include="MassTransit.MongoDb" Version="6.3.2" />
+    <PackageReference Include="MassTransit.Analyzers" Version="7.0.0-develop.2747" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="7.0.0-develop.2747" />
+    <PackageReference Include="MassTransit.MongoDb" Version="7.0.0-develop.2747" />
   </ItemGroup>
   <ItemGroup>
     <None CopyToOutputDirectory="PreserveNewest" Include="flag.jpg" />
