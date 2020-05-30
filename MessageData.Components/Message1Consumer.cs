@@ -19,15 +19,18 @@ namespace MessageData.Components
         
         public async Task Consume(ConsumeContext<Message1> context)
         {
-            Console.WriteLine("----------- Consuming {0}\n", context.Message.TopText);
+            Console.WriteLine("----------- Consuming {0}", context.Message.TopText);
+
+            var fooFile = await context.Message.Foo.File.Value;
+            Console.WriteLine(" Message.Foo.File.Length={0}\n", fooFile?.Length);
             
-            var fileData = new byte[] { 255, 255, 255 };
+            var fileData = new byte[1000];
 
             if (context.RequestId.HasValue)
             {
                 await context.RespondAsync<Message1Completed>(new
                 {
-                    File = await _messageDataRepository.PutBytes(fileData),
+                    File = fileData,
                     DataReceived = context.Message,
                     TopText = "Message 1 consumed"
                 });
@@ -36,7 +39,7 @@ namespace MessageData.Components
             {
                 await context.Publish<Message1Completed>(new
                 {
-                    File = await _messageDataRepository.PutBytes(fileData),
+                    File = fileData,
                     DataReceived = context.Message,
                     TopText = "Message 1 consumed"
                 });

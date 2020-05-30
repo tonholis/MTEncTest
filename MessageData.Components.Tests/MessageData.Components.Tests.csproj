@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="MassTransit" Version="7.0.0-develop.2747" />
+        <PackageReference Include="MassTransit" Version="7.0.0-develop.2748" />
         <PackageReference Include="Automatonymous.Visualizer" Version="4.2.1" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
         <PackageReference Include="NUnit" Version="3.12.0" />
